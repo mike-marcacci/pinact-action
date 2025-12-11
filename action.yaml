@@ -67,15 +67,21 @@ runs:
     - shell: bash
       run: |
         set -euo pipefail
-        if ! (echo "$FILES" | xargs -r "pinact run $FLAGS"); then
-          echo "::error:: GitHub Actions aren't pinned."
-          exit 1
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if ! (echo "$FILES" | xargs -r pinact run -check -review); then
+            echo "::error:: GitHub Actions aren't pinned."
+            exit 1
+          fi
+        else
+          if ! (echo "$FILES" | xargs -r pinact run -check); then
+            echo "::error:: GitHub Actions aren't pinned."
+            exit 1
+          fi
         fi
       if: fromJSON(inputs.skip_push)
       env:
         FILES: ${{ steps.files.outputs.value }}
         AQUA_GLOBAL_CONFIG: ${{env.AQUA_GLOBAL_CONFIG}}:${{steps.aqua_config.outputs.value}}
-        FLAGS: ${{ github.event_name == 'pull_request' && '-review' || '-check' }}
 
     - shell: bash
       id: pinact
